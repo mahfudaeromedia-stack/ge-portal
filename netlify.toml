@@ -52,12 +52,6 @@
   force = true
 
 [[redirects]]
-  from = "/index.html"
-  to = "/app.html?page=index"
-  status = 302
-  force = true
-
-[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
