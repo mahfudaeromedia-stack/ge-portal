@@ -1,0 +1,12 @@
+R39 — P1–P8 / Dashboard / Cost alignment
+- Keeps R38.2 Master Data fixes intact in the working baseline.
+- Management Attention drills into Improvement Opportunity (P2/P3), with severity from available source fields/score rather than forcing High.
+- Decision Required drills into Management Outcome (P5).
+- P5 is independently grantable; authorized Admin gets the menu, Super Admin remains unrestricted.
+- Airport Experience Network drilldown opens explicit Network projection; Map and Station 360 remain separate destinations/functions inside the canonical Airport Experience domain.
+- Management dashboard retains Cost Intelligence and Budget & Financial; unit cost remains unavailable if denominator/source is unavailable.
+- BO/HO operational dashboard has network/station View selector based on available scope/data; no invented passenger/flight usage figures.
+- CSI and NPS metric cards are individually clickable.
+- Dashboard visual hierarchy adjusted toward approved reference: navy primary, semantic colors only for status/priority, proportional charts/cards.
+- Added R39 regression contract. Full npm test PASS locally.
+NOTE: Browser/Netlify runtime has not been claimed PASS; validate after deploy.

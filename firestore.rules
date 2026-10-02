@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function active() { return signedIn() && me().data.status == 'Active'; }
+    function manager() { return active() && me().data.role in ['Super Admin', 'Admin']; }
+    match /users/{uid} {
+      // Own-profile access must be evaluated first so the first Super Admin
+      // can read/create the profile before a role document exists.
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow read: if active();
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow update, delete: if manager();
+    }
+    match /portalData/{group}/{document=**} {
+      allow read: if active();
+      allow write: if manager();
+    }
+    match /portalMetadata/{document=**} {
+      allow read: if active();
+      allow write: if manager();
+    }
+  }
+}

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login — Ground Experience Portal</title>
+<script src="assets/firebase-config.js?v=1"></script>
+<script src="assets/firebase-client.js?v=r66"></script>
+<script src="assets/auth.js?v=2.58"></script>
+<link rel="stylesheet" href="assets/portal.css?v=10.7">
+</head>
+<body>
+<section class="login-page"><div class="login-card"><div class="login-brand"><div class="login-logos"><img class="garuda-logo" src="assets/garuda-indonesia.png" alt="Garuda Indonesia"><img class="danantara-logo" src="assets/danantara.png" alt="Danantara Indonesia"></div><h1>Ground Experience Portal</h1><p>Internal Service Experience Workspace</p></div>
+<form class="login-form" id="loginForm"><label for="loginUser">Username / Email</label><input id="loginUser" autocomplete="username" required><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" required><button class="login-submit" id="loginSubmit" type="submit">Masuk</button><div id="loginError" class="login-error" role="alert"></div><button class="login-forgot" id="forgotPassword" type="button">Lupa password?</button></form>
+<div class="login-assistance" id="loginAssistance" hidden><div class="login-assistance-head"><strong>Bantuan Akses Akun</strong><button type="button" class="login-assistance-close" id="closeAssistance" aria-label="Tutup">×</button></div><p>Ajukan permintaan bantuan akses kepada administrator yang berwenang.</p><label for="assistanceIdentifier">Username / Email</label><input id="assistanceIdentifier" autocomplete="username"><label for="assistanceReason">Keterangan (opsional)</label><textarea id="assistanceReason" rows="3" maxlength="500" placeholder="Jelaskan kendala akses Anda."></textarea><button class="login-submit" id="assistanceSubmit" type="button">Kirim Permintaan</button><div id="assistanceMessage" class="login-assistance-message" role="status"></div></div>
+</div></section>
+<script>
+(async()=>{
+  try{await GXFirebase.init();const u=await GXFirebase.currentUser();if(u){const cached=gxGetSession();if(cached&&String(cached.uid||'')===String(u.uid))location.replace(gxConsumeReturnTo()||gxDefaultPage());else{try{await gxSyncFirebaseSession();location.replace(gxConsumeReturnTo()||gxDefaultPage())}catch(e){console.warn('Firebase session restore:',e)}}}}catch(e){console.warn('Firebase init:',e)}
+})();
+loginForm.addEventListener('submit',async e=>{
+  e.preventDefault();loginError.style.display='none';loginSubmit.disabled=true;loginSubmit.textContent='Memproses…';
+  try{
+    const user=await gxAuthenticate(loginUser.value,loginPass.value);
+    if(!user)throw new Error('INVALID_CREDENTIALS');
+    const session={...user,loginAt:Date.now(),authProvider:'firebase'};gxSetSession(session);const target=gxConsumeReturnTo()||gxDefaultPage();if(typeof gxAuthDiagnostic==='function')gxAuthDiagnostic('LOGIN_SESSION_CREATED',{uid:String(session.uid||''),rawRole:session.role??null,normalizedRole:session.role??null,accessLevel:session.accessLevel??null,scopeType:session.scopeType??null,redirectTarget:target,dashboardPOV:window.GXDashboardPOV?window.GXDashboardPOV(session):'unresolved'});gxAuditDirect('Login','Authentication','Session','User logged in',session);location.replace(target);
+  }catch(err){
+    const messages={
+      INVALID_CREDENTIALS:'Username/email atau password tidak sesuai.',
+      ACCOUNT_INACTIVE:'Akun tidak aktif.',
+      USER_EMAIL_MISSING:'Konfigurasi akun belum lengkap. Hubungi administrator.',
+      USERNAME_LOOKUP_UNAVAILABLE:'Username belum dapat digunakan. Silakan gunakan email atau hubungi administrator.',
+      PROFILE_ACCESS_DENIED:'Akun berhasil diautentikasi, tetapi konfigurasi akun memerlukan bantuan administrator.',
+      FIREBASE_UNAVAILABLE:'Layanan login sedang tidak tersedia. Coba lagi atau hubungi administrator.',
+      PROFILE_NOT_FOUND:'Konfigurasi akun belum tersedia. Hubungi administrator untuk bantuan akses.',
+      AUTH_SESSION_UNAVAILABLE:'Layanan akun sedang tidak tersedia. Coba lagi atau hubungi administrator.',
+      AUTH_INVALID:'Sesi akun tidak valid. Silakan login kembali.',
+      AUTH_PROVIDER_DISABLED:'Metode login belum tersedia. Hubungi administrator.',
+      AUTH_INVALID_EMAIL:'Format email tidak valid.',
+      AUTH_UNAUTHORIZED_DOMAIN:'Akun tidak dapat digunakan pada website ini. Hubungi administrator.'
+    };
+    loginError.textContent=messages[err?.message]||('Login gagal: '+(err?.message||'unknown error'));
+    loginError.style.display='block';loginSubmit.disabled=false;loginSubmit.textContent='Masuk';
+  }
+});
+
+forgotPassword.addEventListener('click',()=>{
+  loginError.style.display='none';
+  assistanceMessage.textContent='';
+  assistanceMessage.className='login-assistance-message';
+  assistanceIdentifier.value=loginUser.value.trim();
+  loginAssistance.hidden=false;
+  assistanceIdentifier.focus();
+});
+closeAssistance.addEventListener('click',()=>{loginAssistance.hidden=true;});
+assistanceSubmit.addEventListener('click',async()=>{
+  const identifier=assistanceIdentifier.value.trim();
+  const reason=assistanceReason.value.trim();
+  assistanceMessage.textContent='';
+  assistanceMessage.className='login-assistance-message';
+  if(!identifier){assistanceMessage.textContent='Username atau email wajib diisi.';assistanceMessage.classList.add('error');return;}
+  assistanceSubmit.disabled=true;
+  assistanceSubmit.textContent='Mengirim…';
+  try{
+    const response=await fetch('/api/access-assistance-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier,reason})});
+    let payload=null;try{payload=await response.json()}catch(e){}
+    if(!response.ok)throw new Error(payload?.message||'Permintaan bantuan belum dapat disimpan.');
+    assistanceMessage.textContent='Permintaan bantuan akses telah disimpan dan diteruskan kepada administrator yang berwenang.';
+    assistanceMessage.classList.add('success');
+    assistanceReason.value='';
+  }catch(err){
+    assistanceMessage.textContent=err?.message||'Permintaan bantuan belum dapat disimpan. Silakan coba lagi.';
+    assistanceMessage.classList.add('error');
+  }finally{assistanceSubmit.disabled=false;assistanceSubmit.textContent='Kirim Permintaan';}
+});
+</script>
+
+</body></html>

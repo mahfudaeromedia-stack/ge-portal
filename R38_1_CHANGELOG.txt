@@ -1,0 +1,12 @@
+R38.1 — Master Data & Partners table action restoration
+
+Root cause fixed:
+- master-reference.js used a local exact role comparison for "Super Admin" / "Admin".
+- When the authenticated session role/access representation differed (e.g. normalized Superadmin/accessLevel Admin), the page rendered table headers but suppressed row checkboxes and Edit/Delete actions.
+
+Changes:
+- Reuse canonical gxCanManage() permission when available.
+- Safe normalized fallback for Super Admin/Admin/accessLevel Admin.
+- Preserve per-row checkbox, Edit, Delete, select-all and Hapus Terpilih.
+- Select-all header now follows the same permission as row selection/actions.
+- Keeps R38 save/loading/batched persistence improvements unchanged.

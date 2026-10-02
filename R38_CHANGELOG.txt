@@ -1,0 +1,23 @@
+R38 - Master Data & Partners Save Responsiveness / Bulk Persistence
+
+Changed:
+1. assets/master-reference.js
+   - Save immediately enters busy state: Menyimpan… + spinner.
+   - Save/Cancel/X disabled while persistence is running.
+   - aria-live status added.
+   - duplicate clicks blocked.
+   - failure restores controls and shows explicit error.
+2. assets/edition1-store.js
+   - multi-row diffs use bounded BATCH requests (75 changes/request) instead of one browser HTTP request per row.
+   - single-row save keeps existing single-write path.
+3. netlify/functions/edition1-data.js
+   - authenticated BATCH action, max 75 changes.
+   - each item still passes existing writeOne permission/scope/audit contract.
+4. assets/portal.css
+   - saving-state/spinner styling.
+5. tests/r38-master-save-contract.js + tests/run-build.mjs
+   - regression contract for busy-state and batch persistence.
+
+Verification:
+- npm test: PASS, including R15-R32 contracts and R38_MASTER_SAVE_CONTRACT_PASS.
+- Browser/Netlify runtime has NOT been claimed PASS; deploy verification is still required.

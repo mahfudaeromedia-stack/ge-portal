@@ -1,0 +1,6 @@
+R41 root correction
+- Fix canonical edition1-business-runtime syntax error introduced by literal escaped newline before R39. This error stopped the whole business runtime, including Initiative and Airport Map renderers.
+- Add node --check regression guard so a syntactically invalid browser runtime cannot pass build contracts again.
+- Airport Experience now hydrates serviceProcurement, facilities and assets required by R40 detail tabs.
+- Master Data table vertical alignment now overrides the higher-specificity final shell td vertical-align:top rule.
+- Cache identities bumped to r41 for business runtime, page boot and portal CSS.

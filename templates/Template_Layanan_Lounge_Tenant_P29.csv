@@ -1,0 +1,6 @@
+# Template CSV Layanan Lounge / Tenant
+# Required: Station, Nama Layanan / Provider, Jenis Layanan
+# Jenis Layanan: Lounge / Tenant / Snack Box. Date: YYYY-MM-DD. Currency: ISO 4217.
+# Single price: isi Harga Per Pax + Mata Uang. Multi price: ulangi Nomor Dokumen yang sama pada beberapa baris dan isi Price Period fields.
+# Multi price rows dengan Nomor Dokumen yang sama membentuk SATU Agreement + beberapa Price Period. Import CREATE-only; duplicate diblokir sebelum commit.
+"Region","Station","Nama Layanan / Provider","Jenis Layanan","PIC","Mata Uang","Harga Per Pax","Tanggal Mulai","Tanggal Berakhir","Nomor Dokumen","Jenis Dokumen","Status Dokumen","Remarks","Price Period Effective From","Price Period Effective To","Price Period Price","Price Period Currency","Price Basis","Price Period Note"

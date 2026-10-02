@@ -1,0 +1,25 @@
+R40 — Airport Map + Master Table Presentation
+
+1. Master Data & Partners table
+- Compact and consistent row/header height.
+- Header and body cells vertically centered.
+- Row checkbox and Select All centered horizontally/vertically.
+- Action buttons aligned in the same row geometry.
+- Existing Edit/Delete/Select functionality preserved.
+
+2. Airport Experience Map
+- Right-side airport detail redesigned to approved reference structure.
+- City + airport/context header.
+- Vendor/provider chips.
+- Service / Facility / System / Contract tabs with live counts from GEStore.
+- Tab content cards use existing Firestore-backed datasets only.
+- Direct Station 360 action from selected airport.
+- Existing marker renderer/filter/hover/click preserved.
+- Network rows remain clickable to Station 360.
+
+3. Cache identity
+- business runtime / portal stylesheet references bumped to r40.
+
+Validation
+- Full npm test suite PASS through R40_MAP_TABLE_PRESENTATION_CONTRACT_PASS.
+- Browser/Netlify deploy still requires live validation.

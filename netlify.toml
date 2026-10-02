@@ -1,0 +1,166 @@
+[build]
+  command = "npm --prefix netlify/functions install --omit=dev --ignore-scripts && npm run test"
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[context.production]
+  publish = "."
+
+[context.deploy-preview]
+  publish = "."
+
+[context.branch-deploy]
+  publish = "."
+
+[dev]
+  framework = "#static"
+  publish = "."
+  port = 8888
+  autoLaunch = false
+
+[functions]
+  directory = "netlify/functions"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/assets/*.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/assets/*.css"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+
+[[redirects]]
+  from = "/"
+  to = "/login.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/standar.html"
+  to = "/app.html?page=standar"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/inisiatif.html"
+  to = "/app.html?page=inisiatif"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/service-planning.html"
+  to = "/app.html?page=service-planning"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/calendar.html"
+  to = "/app.html?page=calendar"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/planning-documents.html"
+  to = "/app.html?page=planning-documents"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/data.html"
+  to = "/app.html?page=data"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/admin.html"
+  to = "/app.html?page=admin"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/berita.html"
+  to = "/app.html?page=berita"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/kontak.html"
+  to = "/app.html?page=kontak"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/lounge-list.html"
+  to = "/app.html?page=lounge-list"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/branch-office-planning.html"
+  to = "/app.html?page=branch-office-planning"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/gaso-planning.html"
+  to = "/app.html?page=gaso-planning"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/station-material.html"
+  to = "/app.html?page=service-planning&panel=material"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/bo-space.html"
+  to = "/app.html?page=branch-office-planning&panel=space"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/airport-systems.html"
+  to = "/app.html?page=branch-office-planning&panel=systems"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/airport-experience-map.html"
+  to = "/app.html?page=airport-experience"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/map.html"
+  to = "/app.html?page=airport-experience"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/network-stations.html"
+  to = "/app.html?page=airport-experience"
+  status = 302
+  force = true
