@@ -40,10 +40,10 @@
     if(key==='documents') return out.map(x=>({...x,blobKey:x.blobKey||x.storagePath||x.documentKey||'',fileName:x.fileName||x.name||''}));
     return out;
   }
-  async function token(){
+  async function token(forceRefresh=false){
     const u=await window.GXFirebase?.currentUser?.();
     if(!u) throw new Error('Authentication required.');
-    return u.getIdToken();
+    return u.getIdToken(!!forceRefresh);
   }
   async function apiGet(keys){
     const list=[...new Set(keys.map(collKey))];
@@ -83,8 +83,12 @@
   }
 
   async function apiPost(body){
-    const t=await token();
-    const r=await fetchWithTimeout('/api/edition1-data',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    let t=await token(false);
+    let r=await fetchWithTimeout('/api/edition1-data',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.status===401){
+      t=await token(true);
+      r=await fetchWithTimeout('/api/edition1-data',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    }
     const p=await r.json().catch(()=>({})); if(!r.ok)throw new Error(p.message||`Save request failed (${r.status}).`); return p.result;
   }
   async function apiPostBatch(collection,changes){

@@ -30,6 +30,6 @@ function performanceStatus(actual,target,previous){const g=gap(actual,target),d=
 function performance(r,previous){return {...clone(r),gap:gap(r?.value,r?.target),achievement:achievement(r?.value,r?.target),delta:delta(r?.value,previous?.value),status:performanceStatus(r?.value,r?.target,previous?.value)}}
 function stationPerformance(stationId){const rows=published(stationId);return rows.map((r,i)=>performance(r,rows[i-1]||null))}
 function stats(){const d=read();return {sources:d.sources.length,measurements:d.measurements.length,published:d.measurements.filter(x=>x.workflowState==='Published').length,insights:d.insights.length,findings:d.findings.length}}
-window.GECustomerExperience={schemaVersion:SCHEMA,storageKey:KEY,read,list,get,source,measurement,transition,publishCanonical,syncPublished,insight,finding,published,chain,integrity,bootstrap,stats,gap,achievement,delta,performanceStatus,performance,stationPerformance,reset:function(){localStorage.removeItem(KEY);return bootstrap()}};
+window.GECustomerExperience={schemaVersion:SCHEMA,storageKey:KEY,read,list,get,source,measurement,transition,publishCanonical,syncPublished,insight,finding,published,stationSummary,chain,integrity,bootstrap,stats,gap,achievement,delta,performanceStatus,performance,stationPerformance,reset:function(){localStorage.removeItem(KEY);return bootstrap()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrap);else bootstrap();
 })();
