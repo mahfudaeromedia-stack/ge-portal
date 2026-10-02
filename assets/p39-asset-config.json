@@ -1,0 +1,45 @@
+{
+  "facilityTypes": [
+    "Premium Check-in",
+    "Check-in Area",
+    "Boarding / Service Area",
+    "Service Counter",
+    "Office / BO Facility",
+    "Other"
+  ],
+  "ownership": [
+    "Garuda",
+    "Airport / Landlord",
+    "Tenant",
+    "Partner",
+    "Vendor",
+    "Other"
+  ],
+  "categories": [
+    "Furniture",
+    "Fixture",
+    "Electronics",
+    "Appliance",
+    "Operational Equipment",
+    "Service Equipment",
+    "Signage",
+    "IT / Display Equipment",
+    "Other"
+  ],
+  "conditions": [
+    "Good",
+    "Fair",
+    "Poor",
+    "Damaged",
+    "Under Maintenance"
+  ],
+  "operationalStatuses": [
+    "In Service",
+    "Out of Service",
+    "Under Maintenance",
+    "Replacement Required",
+    "Inactive / Retired"
+  ],
+  "trackingModes": ["QUANTITY", "INDIVIDUAL"],
+  "units": ["unit", "set", "pair", "lot", "piece"]
+}

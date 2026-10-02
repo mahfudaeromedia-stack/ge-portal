@@ -1,0 +1,51 @@
+/* P40 Clean Draft 01: structural normalization only; Edition 1 remains visual baseline. */
+html,body{min-height:100%} .clean-page-loading{padding:32px;text-align:center}.clean-page-error{margin:24px;padding:18px;border:1px solid currentColor;border-radius:12px}
+/* Canonical overlay strata */
+header.top{z-index:200}.side{z-index:190}.dropdown,.menu-dropdown{z-index:500!important}
+.modal-backdrop,.overlay-backdrop,[class*="backdrop"]{z-index:800!important}
+.initiative-dialog,.modal,.dialog,[role="dialog"]{z-index:900!important}
+.toast,.notification-toast,[class*="toast"]{z-index:1000!important}
+/* Ensure modal-like fixed layers are viewport based rather than page-flow children. */
+.initiative-dialog{position:fixed!important;inset:0!important}
+.ge-clean-combined[data-section="map"]{margin-top:18px}
+/* R2 canonical runtime corrections: shell must never outrank dialogs. */
+html body.final-v257.final-shell-r5 .modal-backdrop,
+html body.final-v257.final-shell-r5 .overlay-backdrop,
+html body.final-v257.final-shell-r5 .tp-modal-backdrop,
+html body.final-v257.final-shell-r5 .map-move-modal-backdrop,
+html body.final-v257.final-shell-r5 .ge-viewport-overlay,
+html body.final-v257.final-shell-r5 [aria-modal="true"]{z-index:100000!important}
+html body.final-v257.final-shell-r5 .modal-backdrop.show,
+html body.final-v257.final-shell-r5 .tp-modal-backdrop.show{display:grid!important;place-items:center!important;position:fixed!important;inset:0!important;padding:20px!important;overflow:auto!important}
+html body.final-v257.final-shell-r5 .modal-backdrop>.modal-card,
+html body.final-v257.final-shell-r5 .tp-modal-backdrop>.tp-modal{position:relative!important;z-index:100001!important;margin:auto!important;max-height:calc(100vh - 40px)!important;overflow:auto!important}
+html body.final-v257.final-shell-r5>.shell>.side{overflow-y:auto!important;overscroll-behavior:contain!important;scrollbar-gutter:stable!important}
+html body.final-v257.final-shell-r5>.shell>.side .ge-sidebar-toggle{position:sticky!important;bottom:-54px!important;margin:12px -8px -54px!important;width:calc(100% + 16px)!important}
+.ge-airport-network-child{margin-top:18px!important}
+html.ge-precollapsed body.final-v257.final-shell-r5>.shell{grid-template-columns:64px minmax(0,1fr)!important}
+
+/* R3 runtime/UI normalization */
+html body.final-v257.final-shell-r5 .ge-nav-link.active{background:#123f78!important;box-shadow:inset 3px 0 #86a9cf!important}
+html body.final-v257.final-shell-r5 .map-region-cards button.active,html body.final-v257.final-shell-r5 .map-chip.active{background:#062b63!important;border-color:#062b63!important}
+html body.final-v257.final-shell-r5 .p26-account-modal{width:min(960px,calc(100vw - 48px))!important;max-height:calc(100dvh - 48px)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+html body.final-v257.final-shell-r5 .p26-account-modal>#p26FormHost{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+html body.final-v257.final-shell-r5 .p26-account-modal #p26UserForm{overflow:auto!important;min-height:0!important;padding-right:8px!important}
+html body.final-v257.final-shell-r5 .p26-modal-actions{display:flex!important;flex:0 0 auto!important;justify-content:flex-end!important;align-items:center!important;gap:10px!important;margin-top:12px!important;padding:14px 0 0!important;background:#fff!important}
+html body.final-v257.final-shell-r5 .p26-modal-actions .btn{width:auto!important;min-width:118px!important;height:40px!important;min-height:40px!important;padding:0 18px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:8px!important}
+html body.final-v257.final-shell-r5 .p26-account-modal .modal-x{position:absolute!important;top:16px!important;right:16px!important;float:none!important;margin:0!important;width:36px!important;height:36px!important;display:grid!important;place-items:center!important;border-radius:8px!important}
+html body.final-v257.final-shell-r5 input,html body.final-v257.final-shell-r5 select,html body.final-v257.final-shell-r5 .btn{box-sizing:border-box}
+html body.final-v257.final-shell-r5 input:not([type=checkbox]):not([type=radio]),html body.final-v257.final-shell-r5 select{min-height:40px}
+html body.final-v257.final-shell-r5 .ge-planning-tabs a.active,html body.final-v257.final-shell-r5 [role=tab].active,html body.final-v257.final-shell-r5 .admin-section-tab.active{background:#062b63!important;color:#fff!important;border-color:#062b63!important}
+.clean-page-loading{min-height:240px;display:grid;place-items:center;color:#6f8298}
+@media(max-width:680px){html body.final-v257.final-shell-r5 .p26-account-modal{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important}.p26-form-grid{grid-template-columns:1fr!important}}
+
+/* Keep shell geometry stable while auth/page runtime boots; avoids wide-sidebar bridge frame. */
+body.e1-page>.shell{display:grid!important;grid-template-columns:206px minmax(0,1fr)!important;min-height:calc(100vh - 74px)!important}
+body.e1-page>.shell>.side{width:206px!important;box-sizing:border-box!important}
+html.ge-precollapsed body.e1-page>.shell{grid-template-columns:62px minmax(0,1fr)!important}
+html.ge-precollapsed body.e1-page>.shell>.side{width:62px!important}
+.ge-p29-view-toggle{margin-left:auto;display:inline-flex;gap:4px;padding:3px;border:1px solid #d8e3ef;border-radius:8px;background:#f7f9fc}.ge-p29-view-toggle button{height:32px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:#496f88;font-weight:700;cursor:pointer}.ge-p29-view-toggle button.active{background:#062b63;color:#fff}.lounge-table-fallback-v237{display:none!important}.lounge-table-fallback-v237.ge-p29-table-visible{display:block!important}.ge-p29-detail-mode #loungeCardGridV237{display:none!important}
+
+/* P40 canonical data-status presentation previously carried by the retired E1 page stylesheet. */
+.e1-data-status{margin:12px 0;padding:8px 12px;border:1px solid rgba(0,0,0,.12);border-radius:8px;background:rgba(255,255,255,.8);font-size:12px}
+.e1-data-status[data-error="1"]{border-color:#b42318;color:#b42318;background:#fff5f4}
