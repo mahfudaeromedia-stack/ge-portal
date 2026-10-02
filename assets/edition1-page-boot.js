@@ -36,7 +36,7 @@ async function waitFirebase(){const state=await ensureFirebase();const u=await w
 async function waitStore(){
  if(window.GEStore&&typeof window.GEStore.hydrate==='function')return window.GEStore;
  // If the declared store script did not initialize, retry the same canonical store once.
- await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='assets/edition1-store.js?v=p40&retry=1';s.dataset.e1StoreRetry='1';s.onload=resolve;s.onerror=()=>reject(new Error('Edition1 data store gagal dimuat.'));document.body.appendChild(s)});
+ await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='assets/edition1-store.js?v=r29&retry=1';s.dataset.e1StoreRetry='1';s.onload=resolve;s.onerror=()=>reject(new Error('Edition1 data store gagal dimuat.'));document.body.appendChild(s)});
  const deadline=Date.now()+5000;
  while(Date.now()<deadline){if(window.GEStore&&typeof window.GEStore.hydrate==='function')return window.GEStore;await new Promise(r=>setTimeout(r,25));}
  throw new Error('Edition1 data store gagal diinisialisasi setelah retry canonical store.');

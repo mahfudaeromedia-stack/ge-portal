@@ -3,7 +3,7 @@
 const { bad, ok, bearer, firebase } = require('./_firebase');
 
 const READ_ROLES = ['Super Admin', 'Admin', 'Management', 'Head Office', 'GE Team', 'Branch Office'];
-const CONFIG = require('../../assets/p39-asset-config.json');
+const CONFIG = require('../../assets/asset-facility-config.json');
 const FACILITY_TYPES = new Set(['Lounge', ...CONFIG.facilityTypes]);
 const OWNERSHIP_VALUES = new Set(CONFIG.ownership);
 const CATEGORY_VALUES = new Set(CONFIG.categories);

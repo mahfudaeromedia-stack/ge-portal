@@ -9,9 +9,7 @@
     "preview": "node tools/serve.mjs --port 4173",
     "build": "npm run test",
     "dev:static": "node tools/serve.mjs --port 5173",
-    "package:deploy": "node tools/package-deploy.mjs",
-    "verify:repo": "npm run test",
-    "test": "node tests/p40-clean-regression.js"
+    "test": "node tests/run-build.mjs"
   },
   "description": "Static multi-page Ground Experience portal; Netlify Functions use a separate dependency manifest.",
   "version": "10.20.0"

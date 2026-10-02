@@ -9,6 +9,7 @@ function gxGetSession(){try{const shared=JSON.parse(localStorage.getItem(GX_SHAR
 function gxSetSession(session){if(!session)return;const value=JSON.stringify(session);try{localStorage.setItem(GX_SHARED_SESSION_KEY,value)}catch(e){}try{sessionStorage.setItem(GX_SESSION_KEY,value)}catch(e){}window.GX_CURRENT_USER=session}
 function gxClearSession(){try{sessionStorage.removeItem(GX_SESSION_KEY)}catch(e){}try{localStorage.removeItem(GX_SHARED_SESSION_KEY);localStorage.removeItem(GX_RETURN_TO_KEY);sessionStorage.removeItem(GX_SYNC_KEY)}catch(e){}window.GX_CURRENT_USER=null}
 function gxCurrentRoute(){const page=(location.pathname.split('/').pop()||'index.html');return `${page}${location.search||''}${location.hash||''}`}
+function gxIsSharedChecklistRoute(){try{return (location.pathname.split('/').pop()||'app.html').toLowerCase()==='app.html'&&new URLSearchParams(location.search).get('page')==='monitoring-assessment'&&!!new URLSearchParams(location.search).get('share')}catch(e){return false}}
 function gxSafeReturnTo(value){const raw=String(value||'').trim();if(!raw)return'';try{const url=new URL(raw,location.href);if(url.origin!==location.origin)return'';const page=(url.pathname.split('/').pop()||'index.html');if(!/^[a-z0-9][a-z0-9._-]*\.html$/i.test(page)||page.toLowerCase()==='login.html')return'';return `${page}${url.search}${url.hash}`}catch(e){return''}}
 function gxRememberReturnTo(route=gxCurrentRoute()){const safe=gxSafeReturnTo(route);if(safe)try{localStorage.setItem(GX_RETURN_TO_KEY,safe)}catch(e){}return safe}
 function gxConsumeReturnTo(){let candidate='';try{candidate=new URLSearchParams(location.search).get('next')||localStorage.getItem(GX_RETURN_TO_KEY)||'';localStorage.removeItem(GX_RETURN_TO_KEY)}catch(e){}return gxSafeReturnTo(candidate)}
@@ -19,13 +20,12 @@ async function gxApi(path,options={}){
   if(!clean)throw new Error('API route tidak valid.');
   const authUser=await window.GXFirebase?.currentUser?.();
   if(!authUser)throw new Error('Authentication required.');
-  const token=await authUser.getIdToken();
-  const headers={...(options.headers||{}),Authorization:`Bearer ${token}`};
-  if(options.body&&!headers['Content-Type'])headers['Content-Type']='application/json';
-  const response=await fetch(`/api/${clean}`,{...options,headers});
-  let payload=null;try{payload=await response.json()}catch(e){}
-  if(!response.ok)throw new Error(payload?.message||`API request failed (${response.status}).`);
-  return payload||{};
+  let token=await authUser.getIdToken();
+  const request=async()=>{const headers={...(options.headers||{}),Authorization:`Bearer ${token}`};if(options.body&&!headers['Content-Type'])headers['Content-Type']='application/json';const response=await fetch(`/api/${clean}`,{...options,headers});let payload=null;try{payload=await response.json()}catch(e){}return {response,payload}};
+  let result=await request();
+  if(result.response.status===401){token=await authUser.getIdToken(true);result=await request();}
+  if(!result.response.ok)throw new Error(result.payload?.message||`API request failed (${result.response.status}).`);
+  return result.payload||{};
 }
 
 async function gxSyncFirebaseSession(){if(!window.GXFirebase?.currentUser)return null;const authUser=await window.GXFirebase.currentUser();if(!authUser)return null;const profile=await window.GXFirebase.currentProfile();if(!profile)return null;const session={...profile,uid:authUser.uid,email:profile.email||authUser.email||'',loginAt:Date.now(),authProvider:'firebase'};gxSetSession(session);return session}
@@ -72,6 +72,7 @@ function gxAuthDiagnostic(stage,details={}){try{const q=new URLSearchParams(loca
 async function gxLoadFirebaseRuntime(){if(window.GXFirebase)return true;const add=src=>new Promise((resolve,reject)=>{if(document.querySelector('script[src^="'+src+'"]'))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});try{await add('assets/firebase-config.js');await add('assets/firebase-client.js');return !!window.GXFirebase}catch(e){return false}}
 async function gxBootstrapProtectedPage(){
   if(location.pathname.endsWith('login.html'))return;
+  if(gxIsSharedChecklistRoute()){gxAuthDiagnostic('SHARED_CHECKLIST_PUBLIC_ROUTE',{public:true});return {sharedChecklist:true};}
   const loaded=await gxLoadFirebaseRuntime();
   gxAuthDiagnostic('SESSION_INIT_START',{firebaseRuntimeLoaded:loaded,page:(location.pathname.split('/').pop()||'index.html')});
   if(loaded){try{
