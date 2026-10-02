@@ -1,0 +1,36 @@
+.ge-shared-public-route{background:#f4f7fb;min-height:100vh}
+.ge-shared-public-route .shell.ge-shared-public-shell{display:block;min-height:100vh}
+.ge-shared-public-route .shell.ge-shared-public-shell .main{display:block;width:100%;max-width:none;margin:0;padding:0;background:#f4f7fb}
+.ge-checklist-share{min-height:100vh;padding:32px 24px 56px}
+.ge-checklist-share-card{width:min(1120px,100%);margin:0 auto;background:#fff;border:1px solid #d5e0eb;border-radius:16px;box-shadow:0 12px 32px rgba(16,42,67,.08);overflow:hidden}
+.ge-checklist-share-head{padding:32px 36px 24px;background:#f8fbff;border-bottom:1px solid #dbe5ef;display:flex;gap:28px;justify-content:space-between;align-items:flex-start}
+.ge-checklist-kicker{font-size:13px;line-height:1.2;font-weight:700;letter-spacing:.14em;color:#2f6fb2;margin-bottom:10px}
+.ge-checklist-share-head h1{margin:0;color:#0d355f;font-size:30px;line-height:1.18;font-weight:700}
+.ge-checklist-share-head p{margin:10px 0 0;color:#6b849c;font-size:15px;line-height:1.55;max-width:650px}
+.ge-checklist-share-meta{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:10px;min-width:min(520px,48%)}
+.ge-checklist-share-meta span{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid #d8e3ee;border-radius:9px;background:#fff;color:#244c73;font-size:13px}
+.ge-checklist-share-meta b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#7990a6}
+.ge-checklist-share-status{display:flex;justify-content:space-between;gap:16px;padding:12px 36px;background:#edf5ff;border-bottom:1px solid #d5e4f4;color:#164b7e;font-size:13px;font-weight:700}
+.ge-checklist-share .ge-form-message{margin:20px 36px 0}
+.ge-checklist-share .ge-form-completion{padding:24px 36px 8px}
+.ge-checklist-share .ge-form-section{border:1px solid #d9e4ee;border-radius:12px;padding:22px;margin:0 0 18px;background:#fff}
+.ge-checklist-share .ge-form-section h3{margin:0 0 18px;color:#173f68;font-size:19px;font-weight:700}
+.ge-checklist-share .ge-form-question{padding:16px 0;border-top:1px solid #edf1f5}
+.ge-checklist-share .ge-form-question:first-of-type{border-top:0;padding-top:0}
+.ge-checklist-share .ge-form-question label{display:block;color:#213f5d;font-size:15px;line-height:1.5}
+.ge-checklist-share .ge-form-question label>b{font-weight:600}
+.ge-checklist-share .ge-form-question input:not([type=checkbox]):not([type=file]),
+.ge-checklist-share .ge-form-question textarea,
+.ge-checklist-share .ge-form-question select{width:100%;min-height:44px;margin-top:8px;border:1px solid #bdccdc;border-radius:9px;background:#fff;padding:10px 12px;color:#183b5e;font:inherit}
+.ge-checklist-share .ge-form-question textarea{min-height:100px;resize:vertical}
+.ge-checklist-share .ge-form-question small{display:block;margin-top:6px;color:#8295a8;font-size:12px}
+.ge-checklist-share-footer{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 36px 28px;border-top:1px solid #e2e9f0;background:#fbfdff}
+.ge-checklist-share-footer strong{display:block;color:#173f68;font-size:14px}
+.ge-checklist-share-footer small{display:block;margin-top:4px;color:#71879b;font-size:12px}
+.ge-checklist-share-success{padding:56px 48px;text-align:center}
+.ge-checklist-share-success h1{margin:0;color:#0d355f;font-size:30px}
+.ge-checklist-share-success p{color:#668097;font-size:16px}
+.ge-checklist-result{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:24px}
+.ge-checklist-result>*{padding:10px 14px;border:1px solid #d5e0eb;border-radius:9px;color:#214a70;background:#f8fbff}
+@media(max-width:820px){.ge-checklist-share{padding:16px 10px 32px}.ge-checklist-share-head{display:block;padding:24px}.ge-checklist-share-meta{min-width:0;margin-top:20px;grid-template-columns:repeat(2,minmax(0,1fr))}.ge-checklist-share-status,.ge-checklist-share-footer{padding-left:24px;padding-right:24px}.ge-checklist-share .ge-form-completion{padding-left:24px;padding-right:24px}}
+@media(max-width:560px){.ge-checklist-share-meta{grid-template-columns:1fr}.ge-checklist-share-footer{display:block}.ge-checklist-share-footer .ge-btn{margin-top:16px;width:100%}}

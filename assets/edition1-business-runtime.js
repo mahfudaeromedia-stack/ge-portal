@@ -1,13 +1,18 @@
 /* Edition 1 Business Runtime
- * Canonical consolidated business implementation for legacy/v257 and Edition 1 routes.
- * Canonical routes use explicit page boot; legacy registry routes may use the synthetic DOMContentLoaded dispatch from app.html.
+ * Consolidated legacy business definitions. DOMContentLoaded auto-boot is intentionally suppressed.
+ * Page boot is owned by edition1-page-boot.js after Firestore hydration.
  */
 (function(){
   const UI_STATE=window.__GE_EDITION1_UI_STATE||(window.__GE_EDITION1_UI_STATE={});
   const geUiGet=(key)=>Object.prototype.hasOwnProperty.call(UI_STATE,key)?UI_STATE[key]:null;
   const geUiSet=(key,value)=>{UI_STATE[key]=String(value);return value};
   const geUiRemove=(key)=>{delete UI_STATE[key]};
-/* Canonical consolidated business implementation. */
+  const _w=window.addEventListener.bind(window);
+  const _d=document.addEventListener.bind(document);
+  window.addEventListener=function(type,fn,opt){ if(type==='DOMContentLoaded') return; return _w(type,fn,opt); };
+  document.addEventListener=function(type,fn,opt){ if(type==='DOMContentLoaded') return; return _d(type,fn,opt); };
+
+/* Canonical business runtime; legacy monolith logic has been consolidated here. */
 
 const store=window.GEStore;
 let data=store.get();
@@ -42,7 +47,7 @@ function getJourney(tp){
  return map[key]||'';
 }
 function uniqueTouchpoints(){
- return [...new Set([...(data.touchpoints||[]).map(x=>typeof x==='string'?x:(x.name||x.title||x.touchpoint||x.code||'')),...(data.initiatives||[]).map(x=>x.tp||x.touchpoint||'')].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+ return [...new Set([...(data.touchpoints||[]).map(x=>typeof x==='string'?x:(x.name||x.title||x.touchpoint||x.code||'')),...(data.initiatives||[]).flatMap(x=>{const v=x.touchpoints||x.tp||x.touchpoint||'';return Array.isArray(v)?v:String(v).split(/[|,;]/)})].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
 }
 function refreshInitiativeFilters(){
  const ft=document.getElementById('ft');
@@ -116,7 +121,18 @@ function renderInitiativeCharts(rows){
    </button>`;
  }).join('');
 }
-function geFilterInitiativeTouchpoint(tp){location.href='app.html?page=calendar&view=gantt&touchpoint='+encodeURIComponent(tp||'');}
+function geFilterInitiativeTouchpoint(tp){
+  const value=String(tp||'').trim();
+  const ft=document.getElementById('ft');
+  const q=document.getElementById('q');
+  const fs=document.getElementById('fs');
+  if(q)q.value='';
+  if(fs)fs.value='';
+  refreshInitiativeFilters();
+  if(ft){ft.value=value;if(ft.value!==value)ft.value='';}
+  renderInitiatives();
+  document.getElementById('initRows')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function renderInitiatives(){
  refreshInitiativeFilters();
  const rows=currentInitiativeRows();
@@ -5646,11 +5662,26 @@ deletePlanningRecordV222 = async function(type,id){
   if(type==='system')renderAirportSystems();
 };
 
-deleteInitiativeV224 = async function(id){
-  if(!geInitiativeAdminV224())return;
-  const x=(data.initiatives||[]).find(v=>v.id===id);if(!x)return;
-  if(!await geConfirmDeleteV234({title:'Hapus Inisiatif?',item:x.name||'Inisiatif',message:'Timeline, milestone, dan referensi dokumen yang terkait dengan inisiatif ini akan ikut terhapus dari master inisiatif.'}))return;
-  data.initiatives=data.initiatives.filter(v=>v.id!==id);save();renderInitiatives();
+window.deleteInitiativeV224 = async function(id){
+  if(!geInitiativeAdminV224())return false;
+  const key=String(id??'');
+  const d=window.GEStore?.get?.()||data;
+  d.initiatives=Array.isArray(d.initiatives)?d.initiatives:[];
+  const x=d.initiatives.find(v=>String(v.id)===key);
+  if(!x)return false;
+  if(!await geConfirmDeleteV234({title:'Hapus Inisiatif?',item:x.name||'Inisiatif',message:'Timeline, milestone, dan referensi dokumen yang terkait dengan inisiatif ini akan ikut terhapus dari master inisiatif.'}))return false;
+  try{
+    d.initiatives=d.initiatives.filter(v=>String(v.id)!==key);
+    window.GEStore.save(d);
+    await window.GEStore.flush();
+    window.renderInitiatives?.();
+    geStorageNoticeV223('Inisiatif Dihapus',`${x.name||'Inisiatif'} berhasil dihapus.`,'success');
+    return true;
+  }catch(error){
+    console.error('[Initiative delete]',error);
+    geStorageNoticeV223('Penghapusan Gagal',error?.message||'Inisiatif belum terhapus. Silakan coba lagi.','error');
+    return false;
+  }
 };
 
 deleteInitiativeDocumentV227 = async function(id,kind,index){
@@ -6701,6 +6732,7 @@ function geCloseSearchableFiltersV245(except=null){
 }
 
 function geEnhanceFilterSelectV245(select){
+  if(window.GEGlobalSelect || select?.dataset?.geGlobalSelectV1)return;
   if(!geIsFilterSelectV245(select)||select.dataset.searchableV245)return;
   select.dataset.searchableV245='1';
 
@@ -7431,7 +7463,7 @@ function geV251RenderTouchpointPage(){
 
 /* ---------- Global page content / section visibility ---------- */
 function pmCfgR2(){data.portalManagerR2||={};data.portalManagerR2.pages||={};data.portalManagerR2.menus||={};return data.portalManagerR2}
-function pmPageKeyR2(){const f=(location.pathname.split('/').pop()||'index.html');if(f==='app.html'){const r=String(new URLSearchParams(location.search).get('page')||'index');const a=(window.P40_CLEAN_ALIASES||{})[r]||r;return a.split('?')[0]+'.html'}return f}
+function pmPageKeyR2(){const f=(location.pathname.split('/').pop()||'index.html');if(f==='app.html'){const r=String(new URLSearchParams(location.search).get('page')||'index');const a=(window.GE_ROUTE_ALIASES||{})[r]||r;return a.split('?')[0]+'.html'}return f}
 function pmApplyPageR2(){
  const cfg=pmCfgR2(),key=pmPageKeyR2(),pc=cfg.pages[key]||{};
  if(pc.title){const hero=document.querySelector('.hero h2,.page-header h2');if(hero)hero.textContent=pc.title}
@@ -8774,7 +8806,7 @@ if(originalRenderUserAccounts){
 }
 })();
 
-/* Canonical project compatibility retained inline where required by existing consumers. */
+/* Consolidated project runtime. */
 /* Compatibility shim for legacy pages that reference the historical project bundle.
  * The current project-tracking implementation remains in the existing page scripts.
  * This file intentionally has no destructive initialization or data migration.
@@ -8784,14 +8816,14 @@ if(originalRenderUserAccounts){
   window.GXProjectCompat = window.GXProjectCompat || {version:'2.54.4-compat',ready:true};
 })();
 
-/* Canonical modal compatibility retained inline. */
+/* Consolidated modal behavior. */
 /* Compatibility shim for legacy modal enhancements. */
 (function(){
   'use strict';
   window.GXModalCompat = window.GXModalCompat || {version:'2.54.4-compat',ready:true};
 })();
 
-/* Canonical Initiative/Calendar stability behavior retained inline. */
+/* Consolidated stability behavior. */
 
 /* V2.55.4 — stability reset on V2.54.4 baseline */
 (function(){
@@ -8937,7 +8969,7 @@ function doImport(){
 window.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{installInitiativeControls();bindCalendar();ensureBulk();window.geV2554BindGantt?.()},80));
 })();
 
-/* SOURCE: assets/lounge-planning-v29.js */
+/* SOURCE: assets/lounge-planning.js */
 /* Ground Experience P29 — Lounge/Tenant planning, shared input contract,
    multi-period pricing and defensive rendering. No production migration. */
 (function(){
@@ -9318,9 +9350,9 @@ window.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{installInitiative
 
   function statusForAgreement(x){
     const end=validDate(x?.endDate);if(!end)return {label:'Status tidak ditentukan',cls:'neutral'};
-    const d=new Date(end+'T23:59:59');if(Number.isNaN(d.getTime()))return {label:'Requires Review',cls:'danger'};
-    const now=new Date();if(d<now)return {label:'Agreement expired',cls:'danger'};
-    const days=Math.ceil((d-now)/86400000);return days<90?{label:days+' hari tersisa',cls:'danger'}:days<180?{label:days+' hari tersisa',cls:'warning'}:{label:days+' hari tersisa',cls:'good'};
+    const d=new Date(end+'T23:59:59');if(Number.isNaN(d.getTime()))return {label:'Requires Review',cls:'warning'};
+    const now=new Date();if(d<now)return {label:'Agreement expired',cls:'warning'};
+    const days=Math.ceil((d-now)/86400000);return days<90?{label:days+' hari tersisa',cls:'warning'}:days<180?{label:days+' hari tersisa',cls:'warning'}:{label:days+' hari tersisa',cls:'good'};
   }
 
   function renderCards(){
@@ -9701,11 +9733,26 @@ const ulabel=u=>uname(u);
 const stations=()=>[...new Set([...(store().airports||[]).map(a=>a.code||a.airportCode||a.iata||a.stationCode),...(store().lounges||[]).map(x=>x.airport),...(store().initiatives||[]).flatMap(x=>arr(x.stations||x.airport))].map(x=>String(x||'').trim().toUpperCase()).filter(Boolean))].sort();
 const touchpoints=()=>[...new Set((store().touchpoints||[]).filter(x=>typeof x==='string'||x.status!=='Inactive').map(x=>typeof x==='string'?x:(x.name||x.touchpoint||x.label)).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'id'));
 const journeys=['Pre-Journey','Pre-Flight','Post-Flight','Post-Journey','Cross-Journey / End-to-End','Supporting / Enabler'];
-function picker(id,items,selected=[]){const root=document.getElementById(id);if(!root)return;const chosen=new Set(arr(selected));root.dataset.values=JSON.stringify([...chosen]);root.innerHTML=`<button type="button" class="ge-picker-trigger-r11"><span>${chosen.size?`${chosen.size} dipilih`:'Pilih'}</span><i>⌄</i></button><div class="ge-picker-pop-r11"><input class="ge-picker-search-r11" placeholder="Cari..." autocomplete="off"><div class="ge-picker-options-r11">${items.map(v=>`<label data-label="${esc(String(v).toLowerCase())}"><input type="checkbox" value="${esc(v)}" ${chosen.has(v)?'checked':''}><span>${esc(v)}</span></label>`).join('')||'<div class="ge-picker-empty-r11">Data belum tersedia.</div>'}</div><div class="ge-picker-actions-r11"><button type="button" data-picker-cancel>Batal</button><button type="button" class="primary" data-picker-ok>OK</button></div></div>`;
- const trigger=root.querySelector('.ge-picker-trigger-r11'),pop=root.querySelector('.ge-picker-pop-r11'),search=root.querySelector('.ge-picker-search-r11');
- const close=()=>pop.classList.remove('show'); trigger.onclick=()=>{document.querySelectorAll('.ge-picker-pop-r11.show').forEach(x=>x!==pop&&x.classList.remove('show'));pop.classList.toggle('show');if(pop.classList.contains('show'))setTimeout(()=>search.focus(),0)};
- search.oninput=()=>{const q=search.value.trim().toLowerCase();root.querySelectorAll('.ge-picker-options-r11 label').forEach(l=>l.hidden=q&&!l.dataset.label.includes(q))};
- root.querySelector('[data-picker-cancel]').onclick=close; root.querySelector('[data-picker-ok]').onclick=()=>{const vals=[...root.querySelectorAll('.ge-picker-options-r11 input:checked')].map(x=>x.value);root.dataset.values=JSON.stringify(vals);trigger.querySelector('span').textContent=vals.length?`${vals.length} dipilih`:'Pilih';close()};
+function picker(id,items,selected=[]){
+ const root=document.getElementById(id);if(!root)return;
+ const values=[...new Set(arr(selected).map(String))],chosen=new Set(values),allKey='__ALL__';
+ root.dataset.values=JSON.stringify(values);
+ const list=[...new Set((items||[]).map(x=>String(x).trim()).filter(Boolean))];
+ const labels=()=>{try{return JSON.parse(root.dataset.values||'[]')}catch{return[]}};
+ const summary=()=>{const vals=labels(),max=3;if(!vals.length)return 'Select';const shown=vals.slice(0,max);return shown.join(', ')+(vals.length>max?` +${vals.length-max}`:'')};
+ root.innerHTML=`<button type="button" class="ge-picker-trigger-r11"><span>${esc(summary())}</span><i>⌄</i></button><div class="ge-picker-pop-r11"><input class="ge-picker-search-r11" placeholder="Search..." autocomplete="off"><div class="ge-picker-options-r11"><label data-all-option="1"><input type="checkbox" value="${allKey}"><span>All</span></label>${list.map(v=>`<label data-label="${esc(v.toLowerCase())}"><input type="checkbox" value="${esc(v)}" ${chosen.has(v)?'checked':''}><span>${esc(v)}</span></label>`).join('')||'<div class="ge-picker-empty-r11">No matching data found.</div>'}</div><div class="ge-picker-actions-r11"><button type="button" data-picker-clear>Clear</button><button type="button" data-picker-cancel>Cancel</button><button type="button" class="primary" data-picker-ok>Apply</button></div></div>`;
+ const trigger=root.querySelector('.ge-picker-trigger-r11'),pop=root.querySelector('.ge-picker-pop-r11'),search=root.querySelector('.ge-picker-search-r11'),all=root.querySelector('[data-all-option] input');
+ const optionInputs=()=>[...root.querySelectorAll('.ge-picker-options-r11 input[type="checkbox"]')].filter(x=>x.value!==allKey);
+ const syncAll=()=>{const opts=optionInputs(),checked=opts.filter(x=>x.checked).length;all.checked=opts.length>0&&checked===opts.length;all.indeterminate=checked>0&&checked<opts.length};
+ const renderSummary=()=>{trigger.querySelector('span').textContent=summary();syncAll()};
+ const close=()=>{pop.classList.remove('show');search.value='';root.querySelectorAll('.ge-picker-options-r11 label').forEach(l=>l.hidden=false)};
+ trigger.onclick=()=>{document.querySelectorAll('.ge-picker-pop-r11.show').forEach(x=>x!==pop&&x.classList.remove('show'));pop.classList.toggle('show');if(pop.classList.contains('show')){syncAll();setTimeout(()=>search.focus(),0)}};
+ search.oninput=()=>{const q=search.value.trim().toLowerCase();root.querySelectorAll('.ge-picker-options-r11 label').forEach(l=>{if(l.hasAttribute('data-all-option')){l.hidden=false;return}l.hidden=!!q&&!l.dataset.label.includes(q)})};
+ all.onchange=()=>{const check=all.checked;optionInputs().forEach(x=>x.checked=check);syncAll()};
+ root.querySelector('[data-picker-clear]').onclick=()=>{optionInputs().forEach(x=>x.checked=false);all.checked=false;all.indeterminate=false};
+ root.querySelector('[data-picker-cancel]').onclick=close;
+ root.querySelector('[data-picker-ok]').onclick=()=>{const vals=optionInputs().filter(x=>x.checked).map(x=>x.value);root.dataset.values=JSON.stringify(vals);renderSummary();close()};
+ syncAll();renderSummary();
 }
 function picked(id){try{return JSON.parse(document.getElementById(id)?.dataset.values||'[]')}catch{return []}}
 function fillPic(selectId,freeId,row={}){const el=document.getElementById(selectId);if(!el)return;el.innerHTML='<option value="">Pilih akun User & Access</option>'+users().map(u=>`<option value="${esc(ukey(u))}">${esc(ulabel(u))}</option>`).join('');el.value=row.picUserId||'';const free=document.getElementById(freeId);if(free)free.value=row.picUserId?'':(row.pic||'')}
@@ -9721,14 +9768,15 @@ function setv(id,v){const e=document.getElementById(id);if(e)e.value=v??''}
 function initInitiativeForm(row={}){picker('initiativeStationPickerR11',stations(),row.stations||row.airport);picker('initiativeJourneyPickerR11',journeys,row.journeyScopes||row.journey);picker('initiativeTouchpointPickerR11',touchpoints(),row.touchpoints||row.tp||row.touchpoint);fillPic('initiativePicV224','initiativePicFreeR11',row);}
 window.openInitiativeModalV224=function(id=null){if(typeof geInitiativeAdminV224==='function'&&!geInitiativeAdminV224())return;const row=id?(store().initiatives||[]).find(x=>String(x.id)===String(id)):null;setv('initiativeEditIdV224',row?.id||'');const title=document.getElementById('initiativeModalTitleV224');if(title)title.textContent=row?'Update Inisiatif':'Tambah Inisiatif';setv('initiativeNameV224',row?.name);setv('initiativeDueDateV224',row?.dueDate);setv('initiativePlanV224',row?.plan??0);setv('initiativeRealV224',row?.real??0);setv('initiativeRemarkV224',row?.remark);setv('initiativeStartDateV10',row?.startDate);setv('initiativeEndDateV10',row?.endDate);setv('initiativeActualDateV10',row?.actualDate);setv('initiativeEstimatedCostV10',row?.estimatedCost||0);setv('initiativeBudgetV10',row?.budget||0);setv('initiativeActualCostV10',row?.actualCost||0);setv('initiativePriorityV10',row?.priority||'Normal');setv('initiativeStatusV10',row?.status||'Not Started');setv('initiativeOutputV10',row?.output);setv('initiativeAchievementV10',row?.achievement);initInitiativeForm(row||{});document.getElementById('initiativeModalV224')?.classList.add('show')};
 window.saveInitiativeV224=async function(){if(typeof geInitiativeAdminV224==='function'&&!geInitiativeAdminV224())return;const d=store();d.initiatives=Array.isArray(d.initiatives)?d.initiatives:[];const id=String(document.getElementById('initiativeEditIdV224')?.value||''),name=document.getElementById('initiativeNameV224')?.value.trim()||'',sts=picked('initiativeStationPickerR11'),jrn=picked('initiativeJourneyPickerR11'),tps=picked('initiativeTouchpointPickerR11');if(!name||!sts.length||!jrn.length||!tps.length)return alert('Nama Inisiatif, Station / Area, Journey Scope, dan Touch Point wajib diisi.');const invalid=tps.filter(name=>{const master=(d.touchpoints||[]).find(x=>typeof x==='object'&&x.name===name);return master&&!(master.journeys||[master.journey]).some(j=>jrn.includes(j))});if(invalid.length)return alert('Journey Scope belum sesuai dengan Touch Point: '+invalid.join(', '));const picId=document.getElementById('initiativePicV224')?.value||'',free=document.getElementById('initiativePicFreeR11')?.value.trim()||'',u=users().find(x=>ukey(x)===picId),existing=id?d.initiatives.find(x=>String(x.id)===id):null,row=existing||{id:Date.now(),workflow:[],triggerDocuments:[],supportingDocuments:[]},oldPicId=existing?.picUserId||'';Object.assign(row,{name,stations:sts,airport:sts.join(', '),journeyScopes:jrn,journey:jrn[0],touchpoints:tps,tp:tps[0],touchpointIds:tps.map(name=>(d.touchpoints||[]).find(v=>typeof v==='object'&&v.name===name)?.id).filter(Boolean),picUserId:picId,pic:u?uname(u):free,dueDate:document.getElementById('initiativeDueDateV224')?.value||'',startDate:document.getElementById('initiativeStartDateV10')?.value||'',endDate:document.getElementById('initiativeEndDateV10')?.value||'',actualDate:document.getElementById('initiativeActualDateV10')?.value||'',plan:Number(document.getElementById('initiativePlanV224')?.value||0),real:Number(document.getElementById('initiativeRealV224')?.value||0),estimatedCost:Number(document.getElementById('initiativeEstimatedCostV10')?.value||0),budget:Number(document.getElementById('initiativeBudgetV10')?.value||0),actualCost:Number(document.getElementById('initiativeActualCostV10')?.value||0),priority:document.getElementById('initiativePriorityV10')?.value||'Normal',status:document.getElementById('initiativeStatusV10')?.value||'Not Started',output:document.getElementById('initiativeOutputV10')?.value.trim()||'',achievement:document.getElementById('initiativeAchievementV10')?.value.trim()||'',remark:document.getElementById('initiativeRemarkV224')?.value.trim()||''});if(!existing)d.initiatives.push(row);d.touchpoints=Array.isArray(d.touchpoints)?d.touchpoints:[];tps.forEach(tp=>{if(!d.touchpoints.some(x=>(typeof x==='string'?x:x.name)===tp))d.touchpoints.push(tp)});const previousPic=oldPicId;
- const saveButton=document.querySelector('#initiativeModalV224 [onclick*="saveInitiativeV224"]');if(saveButton)saveButton.disabled=true;
+ const saveButton=document.querySelector('#initiativeModalV224 form button[type="submit"]');
+ if(saveButton){saveButton.disabled=true;saveButton.dataset.originalText=saveButton.textContent;saveButton.textContent='Menyimpan...';}
  try{
   window.GEStore.save(d);await window.GEStore.flush();
   if(picId&&picId!==previousPic){assignment('Initiative',row.id,row.name,picId,row.dueDate);await window.GEStore.flush()}
   document.getElementById('initiativeModalV224')?.classList.remove('show');window.renderInitiatives?.();
-  geStorageNoticeV223('Inisiatif Tersimpan',`${row.name} berhasil diperbarui.`, 'success');
+  geStorageNoticeV223('Inisiatif Tersimpan',`${row.name} berhasil disimpan.`, 'success');
  }catch(error){console.error('[Initiative save]',error);geStorageNoticeV223('Penyimpanan Gagal',error?.message||'Perubahan belum tersimpan. Silakan coba lagi.','error')}
- finally{if(saveButton)saveButton.disabled=false}};
+ finally{if(saveButton){saveButton.disabled=false;saveButton.textContent=saveButton.dataset.originalText||'Simpan';}}};
 window.openInitiativeStepV224=function(parentId,index=''){if(typeof geInitiativeAdminV224==='function'&&!geInitiativeAdminV224())return;const x=(store().initiatives||[]).find(v=>String(v.id)===String(parentId));if(!x)return;x.workflow=Array.isArray(x.workflow)?x.workflow:[];const step=index!==''?x.workflow[Number(index)]:null;setv('initiativeStepParentIdV224',parentId);setv('initiativeStepEditIndexV224',index);setv('initiativeStepTitleV224',step?.title);setv('initiativeStepDueDateV224',step?.dueDate);setv('initiativeStepStatusV224',step?.status||'Not Started');setv('initiativeStepRemarkV224',step?.remark);setv('geV254StepType',step?.stepType||'date');setv('geV254StepStart',step?.startDate);setv('geV254StepEnd',step?.endDate);setv('geV254StepEstimate',step?.estimatedCost||0);setv('geV254StepActualCost',step?.actualCost||0);fillPic('initiativeStepPicV224','initiativeStepPicFreeR11',step||{});document.getElementById('initiativeStepModalV224')?.classList.add('show')};
 window.saveInitiativeStepV224=async function(){const d=store(),parent=String(document.getElementById('initiativeStepParentIdV224')?.value||''),x=(d.initiatives||[]).find(v=>String(v.id)===parent);if(!x)return;x.workflow=Array.isArray(x.workflow)?x.workflow:[];const idx=document.getElementById('initiativeStepEditIndexV224')?.value||'',title=document.getElementById('initiativeStepTitleV224')?.value.trim()||'';if(!title)return alert('Nama Tahapan / Milestone wajib diisi.');const oldPicId=idx!==''?x.workflow[Number(idx)]?.picUserId||'':'';const picId=document.getElementById('initiativeStepPicV224')?.value||'',free=document.getElementById('initiativeStepPicFreeR11')?.value.trim()||'',u=users().find(v=>ukey(v)===picId),obj={title,picUserId:picId,pic:u?uname(u):free,stepType:document.getElementById('geV254StepType')?.value||'date',startDate:document.getElementById('geV254StepStart')?.value||'',endDate:document.getElementById('geV254StepEnd')?.value||'',dueDate:document.getElementById('initiativeStepDueDateV224')?.value||'',estimatedCost:Number(document.getElementById('geV254StepEstimate')?.value||0),actualCost:Number(document.getElementById('geV254StepActualCost')?.value||0),status:document.getElementById('initiativeStepStatusV224')?.value||'Not Started',remark:document.getElementById('initiativeStepRemarkV224')?.value.trim()||''};if(idx==='')x.workflow.push(obj);else x.workflow[Number(idx)]=obj;try{window.GEStore.save(d);await window.GEStore.flush();if(picId&&picId!==oldPicId){assignment('Milestone',`${parent}:${idx===''?x.workflow.length-1:idx}`,`${x.name||'Initiative'} — ${title}`,picId,obj.dueDate);await window.GEStore.flush()}document.getElementById('initiativeStepModalV224')?.classList.remove('show');window.openInitiativeTimelineV224?.(typeof x.id==='number'?Number(x.id):x.id);geStorageNoticeV223('Milestone Tersimpan',`${title} berhasil disimpan.`,'success')}catch(e){geStorageNoticeV223('Penyimpanan Gagal',e.message||String(e),'error')}};
 ['closeInitiativeModalV224','closeInitiativeProgressV224','closeInitiativeStepV224','closeInitiativeTimelineV224','openInitiativeTimelineV224','deleteInitiativeV224','deleteInitiativeStepV224','openInitiativeProgressV224','saveInitiativeProgressV224'].forEach(n=>{try{if(typeof eval(n)==='function')window[n]=eval(n)}catch(e){}});
@@ -9843,6 +9891,7 @@ window.openInitiativeModalV224=function(id=null){ensureInitiativeCanonicalFields
 window.geEnsureInitiativeCanonicalFieldsR12=ensureInitiativeCanonicalFields;
 
 function installSearchableSelect(select){
+ if(window.GEGlobalSelect)return;
  if(!select||select.multiple||select.dataset.comboR12)return;select.dataset.comboR12='1';
  const wrap=document.createElement('div');wrap.className='ge-combo-r12';
  const input=document.createElement('input');input.type='text';input.className='ge-combo-input-r12';input.placeholder=select.options[0]?.textContent||'Pilih atau ketik...';input.autocomplete='off';
@@ -9916,7 +9965,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 /* Final canonical Initiative Grid/List view. This wrapper is intentionally last so legacy exports cannot overwrite it. */
 const initRender=window.renderInitiatives;
-if(initRender)window.renderInitiatives=function(){const out=initRender.apply(this,arguments),view=window.GE_INITIATIVE_VIEW_R4||document.getElementById('geInitiativeViewSelectR6')?.value||'grid';if(view!=='list')return out;let rows=[];try{rows=typeof currentInitiativeRows==='function'?currentInitiativeRows().filter(typeof geInitiativeScopedV224==='function'?geInitiativeScopedV224:()=>true):(store().initiatives||[])}catch(e){rows=store().initiatives||[]}const host=document.getElementById('initRows');if(host){host.innerHTML=`<div class="ge-initiative-list-r4"><table data-initiative-list-r26><thead><tr><th data-sort="0">Initiative ↕</th><th data-sort="1">Journey ↕</th><th data-sort="2">Touch Point ↕</th><th data-sort="3">Station ↕</th><th data-sort="4">PIC ↕</th><th data-sort="5">Due ↕</th><th data-sort="6">Progress ↕</th><th>Action</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${esc(x.name||'-')}</b></td><td>${esc((x.journeyScopes||[x.journey]).filter(Boolean).join(', '))}</td><td>${esc((x.touchpoints||[x.tp||x.touchpoint]).filter(Boolean).join(', '))}</td><td>${esc((x.stations||[x.airport]).filter(Boolean).join(', '))}</td><td>${esc(x.pic||'-')}</td><td>${esc(x.dueDate||x.endDate||'-')}</td><td>${Number(x.real||0)}% / ${Number(x.plan||0)}%</td><td><button class="btn secondary compact-btn" onclick="openInitiativeModalV224('${esc(x.id)}')">Update</button><button class="btn secondary compact-btn" onclick="openInitiativeTimelineV224('${esc(x.id)}')">Milestone</button></td></tr>`).join('')||'<tr><td colspan="8">Belum ada inisiatif pada filter ini.</td></tr>'}</tbody></table></div>`;window.geEnhanceAllTables?.();const t=host.querySelector('table[data-initiative-list-r26]');t?.querySelectorAll('th[data-sort]').forEach(th=>{th.style.cursor='pointer';th.onclick=()=>{const i=Number(th.dataset.sort),body=t.tBodies[0],dir=th.dataset.dir==='asc'?-1:1;[...body.rows].sort((a,b)=>a.cells[i].innerText.localeCompare(b.cells[i].innerText,'id',{numeric:true})*dir).forEach(r=>body.appendChild(r));th.dataset.dir=dir===1?'asc':'desc'}})}return out};
+if(initRender)window.renderInitiatives=function(){const out=initRender.apply(this,arguments),view=window.GE_INITIATIVE_VIEW_R4||document.getElementById('geInitiativeViewSelectR6')?.value||'grid';if(view!=='list')return out;let rows=[];try{rows=typeof currentInitiativeRows==='function'?currentInitiativeRows().filter(typeof geInitiativeScopedV224==='function'?geInitiativeScopedV224:()=>true):(store().initiatives||[])}catch(e){rows=store().initiatives||[]}const host=document.getElementById('initRows');if(host){host.innerHTML=`<div class="ge-initiative-list-r4"><table data-initiative-list-r26><thead><tr><th data-sort="0">Initiative ↕</th><th data-sort="1">Journey ↕</th><th data-sort="2">Touch Point ↕</th><th data-sort="3">Station ↕</th><th data-sort="4">PIC ↕</th><th data-sort="5">Due ↕</th><th data-sort="6">Progress ↕</th><th>Action</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${esc(x.name||'-')}</b></td><td>${esc((x.journeyScopes||[x.journey]).filter(Boolean).join(', '))}</td><td>${esc((x.touchpoints||[x.tp||x.touchpoint]).filter(Boolean).join(', '))}</td><td>${esc((x.stations||[x.airport]).filter(Boolean).join(', '))}</td><td>${esc(x.pic||'-')}</td><td>${esc(x.dueDate||x.endDate||'-')}</td><td>${Number(x.real||0)}% / ${Number(x.plan||0)}%</td><td>${typeof geInitiativeManageButtonsV224==='function'?geInitiativeManageButtonsV224(x):''}</td></tr>`).join('')||'<tr><td colspan="8">Belum ada inisiatif pada filter ini.</td></tr>'}</tbody></table></div>`;window.geEnhanceAllTables?.();const t=host.querySelector('table[data-initiative-list-r26]');t?.querySelectorAll('th[data-sort]').forEach(th=>{th.style.cursor='pointer';th.onclick=()=>{const i=Number(th.dataset.sort),body=t.tBodies[0],dir=th.dataset.dir==='asc'?-1:1;[...body.rows].sort((a,b)=>a.cells[i].innerText.localeCompare(b.cells[i].innerText,'id',{numeric:true})*dir).forEach(r=>body.appendChild(r));th.dataset.dir=dir===1?'asc':'desc'}})}return out};
 window.geSetInitiativeViewR20=function(v){window.GE_INITIATIVE_VIEW_R4=v;document.querySelectorAll('#geInitiativeViewToggleR4 [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));window.renderInitiatives?.()};
 setTimeout(()=>{document.querySelectorAll('#geInitiativeViewToggleR4 [data-view]').forEach(b=>b.onclick=()=>window.geSetInitiativeViewR20(b.dataset.view));const s=document.getElementById('geInitiativeViewSelectR6');if(s)s.onchange=()=>window.geSetInitiativeViewR20(s.value)},0);
 
@@ -10015,3 +10064,24 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 
 })();
+
+
+/* Canonical Airport Experience & Assessment foundation — merged from the validated airport/assessment implementation. */
+(function(){'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const arr=k=>Array.isArray(window.GEStore?.get?.()?.[k])?window.GEStore.get()[k]:[];
+function codeOf(x){return String(x?.stationCode||x?.station||x?.airportCode||x?.code||x?.iata||'').toUpperCase()}
+function stationParam(){return new URLSearchParams(location.search).get('station')||new URLSearchParams(location.search).get('stationId')||''}
+function addAirportTabs(){const main=$('#cleanPageOutlet');if(!main||$('.ge-assessment-airport-nav',main))return;const title=$('h1',main)?.textContent||'';if(!/Airport Experience|Station Profile|Station 360|Service Experience|Capability/i.test(title))return;const page=new URLSearchParams(location.search).get('page')||'index';const nav=document.createElement('nav');nav.className='ge-assessment-airport-nav';nav.innerHTML=[['airport-experience','Network & Map'],['station-360','Station 360'],['service-experience','Service Experience'],['capability-classification','Capability & Classification']].map(([p,l])=>`<a href="app.html?page=${p}" class="${page===p?'active':''}">${l}</a>`).join('');main.prepend(nav)}
+function fixMap(){const tools=$('.map-search-tools');if(tools)tools.classList.add('ge-assessment-map-filter-row');}
+function enhanceStation360(){const content=$('#content');if(!content||content.dataset.r47Bound)return;content.dataset.r47Bound='1';const render=()=>{const select=$('#station'),requested=stationParam();if(select&&requested&&!select.dataset.r47ParamApplied){select.dataset.r47ParamApplied='1';const option=[...select.options].find(o=>o.value===requested||o.textContent.trim().toUpperCase().startsWith(String(requested).toUpperCase()+' '));if(option){select.value=option.value;select.dispatchEvent(new Event('change'));}}const c=String(select?.selectedOptions?.[0]?.textContent||requested||'').split(/\s|—/)[0].toUpperCase();if(!c)return;const airport=arr('airports').find(x=>codeOf(x)===c)||{},airportClass=String(airport.airportClass||airport.classification||airport.class||'').trim().toLowerCase();const required=publishedItems().filter(x=>(!x.applicableStations||String(x.applicableStations).split(/[,;]+/).map(v=>v.trim().toUpperCase()).includes(c))&&(!x.airportClass||String(x.airportClass).trim().toLowerCase()===airportClass)),records=monitoringRecords().filter(x=>codeOf(x)===c&&x.standardLinked),latest=new Map();records.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).forEach(r=>(r.answers||[]).forEach(a=>latest.set(a.requirementRef+'|'+a.touchPoint,a)));const answers=required.map(x=>({...x,assessment:latest.get(x.requirementRef+'|'+x.touchPoint)})).filter(x=>x.assessment);const counted=answers.filter(x=>(x.assessment.compliant!==null&&x.assessment.compliant!==undefined||['Yes','No'].includes(x.assessment.result))),yes=counted.filter(x=>(x.assessment.compliant===true||x.assessment.compliant==null&&x.assessment.result==='Yes')).length,no=counted.filter(x=>(x.assessment.compliant===false||x.assessment.compliant==null&&x.assessment.result==='No')).length,alignments=arr('serviceAlignments').filter(x=>codeOf(x)===c),inventory=['facilities','assets','airportSystems','lounges','personnel'].reduce((n,k)=>n+arr(k).filter(x=>codeOf(x)===c).length,0);const existing=$('#r47StationHealth',content);existing?.remove();const block=document.createElement('section');block.id='r47StationHealth';block.className='ge-assessment-station360';const kv=(label,value,note)=>`<article><small>${label}</small><b>${value}</b><span>${note}</span></article>`;const rows=required.map(x=>{const current=alignments.find(v=>String(v.touchPoint||v.touchpoint||'').toLowerCase()===String(x.touchPoint).toLowerCase()&&String(v.requirementRef||v.requirementCode||'')===String(x.requirementRef));const condition=current?String(current.currentStatus||current.status||'Unverified'):'Unverified';const result=latest.get(x.requirementRef+'|'+x.touchPoint)?.result||'Not Assessed';const gap=/not available|missing|absent/i.test(condition)?'Requirement Gap':latest.get(x.requirementRef+'|'+x.touchPoint)?.finding||result==='No'?'Performance Finding':'—';return `<tr><td>${esc(x.touchPoint)}</td><td>${esc(x.pillar)}</td><td>${esc(x.requirementRef)}</td><td>${esc(condition)}</td><td>${esc(result)}</td><td>${esc(gap)}</td></tr>`}).join('');block.innerHTML=`<div class="ge-assessment-360-head"><div><span class="eyebrow">REQUIRED → CURRENT → ASSESSED → EXPERIENCED</span><h2>${esc(c)} Experience Health</h2><p>Source-of-truth tetap di requirement, master capability, monitoring, dan customer insight masing-masing.</p></div><a class="ge-btn" href="app.html?page=monitoring-assessment&station=${encodeURIComponent(c)}">Open Monitoring</a></div><div class="ge-assessment-layer-grid">${kv('REQUIRED',required.length||'—','Published mapped checklist requirements')}${kv('CURRENT',alignments.length||'—',`${inventory} inventory records · explicit mapping only`)}${kv('ASSESSED',counted.length?Math.round(yes/counted.length*100)+'%':'—',`${no} open NO response(s) · N/A excluded`)}${kv('EXPERIENCED','—','Customer voice shown when source mapping is available')}</div><div class="ge-assessment-three-pillar">${['People','Premises','Process'].map(p=>{const a=counted.filter(x=>x.pillar===p),ok=a.filter(x=>(x.assessment.compliant===true||x.assessment.compliant==null&&x.assessment.result==='Yes')).length;return `<article><h3>${p}</h3><b>${a.length?Math.round(ok/a.length*100)+'%':'—'}</b><p>${a.length} assessed · ${a.length-ok} NO finding(s)</p></article>`}).join('')}</div><section class="ge-card ge-assess-card"><h3>Required / Current / Assessed by Touch Point</h3><p>Current hanya menyatakan kondisi yang memang dipetakan. NO pada capability yang ada adalah performance finding; kebutuhan yang belum tersedia adalah requirement gap.</p><div class="table-wrap"><table><thead><tr><th>Touch Point</th><th>3P</th><th>Requirement</th><th>Current</th><th>Assessed</th><th>Gap / Finding</th></tr></thead><tbody>${rows||'<tr><td colspan="6">Belum ada template standard-linked yang published untuk station ini.</td></tr>'}</tbody></table></div></section>`;content.prepend(block)};setTimeout(render,350);$('#station')?.addEventListener('change',()=>setTimeout(render,60));$('#refresh')?.addEventListener('click',()=>setTimeout(render,150))}
+function monitoringRecords(){const legacy=arr('monitoringAssessments');const modern=arr('formSubmissions').filter(x=>x.category==='Assessment').map(x=>{const f=x.formSnapshot?.sections?.flatMap(v=>v.fields||[])||[];return {id:x.id,stationCode:x.stationCode,date:x.submittedAt,standardLinked:true,answers:(x.findings||[]).map(a=>{const field=f.find(v=>v.id===a.fieldId)||{};const p=touchFor(a.touchpointId);return {requirementRef:a.requirementRef||'',touchPoint:p?.name||'',pillar:a.pillar||'',result:'No',finding:true,compliant:false}}).concat(f.filter(v=>!x.findings?.some(a=>a.fieldId===v.id)&&v.requirementRef&&v.touchpointId).map(v=>({requirementRef:v.requirementRef,touchPoint:touchFor(v.touchpointId)?.name||'',pillar:v.pillar||'',result:String(x.answers?.[v.id]||''),compliant:v.passValue!==''&&v.passValue!=null?String(x.answers?.[v.id])===String(v.passValue):null})))}});return legacy.concat(modern)}
+function publishedItems(){return arr('monitoringTemplates').filter(t=>t.status==='Published'&&t.kind==='Standard-linked').flatMap(t=>(t.items||[]).map(item=>({...item,applicableStations:t.applicableStations||'',airportClass:t.airportClass||''}))).concat(arr('formTemplates').filter(t=>t.status==='Published'&&t.category==='Assessment').flatMap(t=>{const snapshot=t.versions?.find(v=>v.version===t.currentVersion)?.snapshot||t;return (snapshot.sections||[]).flatMap(s=>(s.fields||[]).filter(f=>f.requirementRef&&f.touchpointId&&f.journey&&f.pillar).map(f=>({requirementRef:f.requirementRef,touchpointId:f.touchpointId,touchPoint:touchFor(f.touchpointId)?.name||'',journey:f.journey,pillar:f.pillar,source:f.source||'Garuda Standard',applicableStations:snapshot.stationScope||'',airportClass:snapshot.airportClass||''}))) }))}
+function latestFor(station,item){return monitoringRecords().filter(r=>r.standardLinked&&codeOf(r)===station).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).flatMap(r=>r.answers||[]).find(a=>a.requirementRef===item.requirementRef&&a.touchPoint===item.touchPoint)}
+function touchMaster(){return arr('touchpoints').filter(x=>typeof x==='object'&&x.status!=='Inactive')}
+function touchFor(v){return touchMaster().find(t=>[t.id,t.name,...(t.aliases||[])].some(n=>String(n).toLowerCase()===String(v||'').toLowerCase()))}
+function renderServiceExperience(){const page=$('.ge-assessment-service-matrix')?.closest('.ge-assessment-foundation-page');if(!page)return;page.querySelector('.ge-assessment-service-matrix').hidden=true;const legacy=page.querySelector('.ge-assessment-service-matrix + .ge-card');if(legacy)legacy.hidden=true;let host=$('#r47ServiceAnalysis',page);if(!host){host=document.createElement('section');host.id='r47ServiceAnalysis';host.className='ge-card ge-assess-card';page.appendChild(host)}const prev=host.dataset,station=prev.station||'',journey=prev.journey||'',point=prev.point||'',pillar=prev.pillar||'',stations=[...new Set(arr('airports').map(codeOf).filter(Boolean))],masters=touchMaster(),points=masters.filter(t=>!journey||(t.journeys||[t.journey]).includes(journey)),chosen=points.find(t=>t.id===point),published=publishedItems().filter(x=>!chosen||touchFor(x.touchpointId||x.touchPoint)?.id===chosen.id),scoped=published.filter(x=>!station||!x.applicableStations||String(x.applicableStations).split(/[,;]+/).map(v=>v.trim().toUpperCase()).includes(station)).filter(x=>!pillar||x.pillar===pillar),stationSet=station?[station]:stations;const records=stationSet.flatMap(st=>scoped.map(x=>({station:st,...x,answer:latestFor(st,x)})));const cards=['People','Premises','Process'].map(p=>{const set=records.filter(x=>x.pillar===p),assessed=set.filter(x=>(x.answer?.compliant!==null&&x.answer?.compliant!==undefined||['Yes','No'].includes(x.answer?.result)));return `<button type="button" data-pillar="${p}" class="ge-experience-card ${pillar===p?'active':''}"><h3>${p}</h3><b>${assessed.length?Math.round(assessed.filter(x=>(x.answer.compliant===true||x.answer.compliant==null&&x.answer.result==='Yes')).length/assessed.length*100)+'%':'—'}</b><p>${set.length} requirement · ${assessed.filter(x=>(x.answer.finding||x.answer.result==='No')).length} finding</p></button>`}).join('');const voice=arr('customerExperience').filter(x=>String(x.status||'Published')==='Published'&&(!station||codeOf(x)===station)).flatMap(x=>(x.touchpoints||[]).filter(t=>['Pre-Journey','Pre-Flight','Post-Flight','Post-Journey'].includes(t.journey)).filter(t=>!chosen||touchFor(t.id||t.name)?.id===chosen.id).filter(t=>!journey||t.journey===journey).map(t=>({...t,period:x.period||''}))).sort((a,b)=>String(b.period).localeCompare(String(a.period)));host.innerHTML=`<h2>Service Experience · Ground Touch Points</h2><p>Requirement, kondisi, monitoring, dan suara pelanggan tetap ditampilkan menurut sumbernya. Checklist Custom tidak masuk perhitungan.</p><div class="ge-assess-form"><label>Station<select data-station><option value="">All Stations</option>${stations.map(v=>`<option value="${esc(v)}" ${v===station?'selected':''}>${esc(v)}</option>`).join('')}</select></label><label>Journey<select data-journey><option value="">All Ground Journey</option>${['Pre-Journey','Pre-Flight','Post-Flight','Post-Journey','Cross-Journey / End-to-End','Supporting / Enabler'].map(v=>`<option ${v===journey?'selected':''}>${v}</option>`).join('')}</select></label><label>Touch Point<select data-point><option value="">All Touch Points</option>${points.map(v=>`<option value="${esc(v.id)}" ${v.id===point?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label></div><div class="ge-assessment-three-pillar">${cards}</div><p><b>Customer Voice:</b> ${voice.length?`${esc(voice[0].name)} · score ${esc(voice[0].score??'—')} · gap ${esc(voice[0].gap??'—')} (${esc(voice[0].period)})`:'Belum ada hasil CSI touch point pada pilihan ini.'}</p><div class="table-wrap"><table><thead><tr><th>Station</th><th>Touch Point</th><th>3P</th><th>Requirement</th><th>Current</th><th>Assessment</th><th>Finding</th></tr></thead><tbody>${records.map(x=>{const actual=arr('serviceAlignments').find(v=>codeOf(v)===x.station&&String(v.requirementRef||v.requirementCode||'')===x.requirementRef),result=x.answer?.result||'Not Assessed';return `<tr><td><a href="app.html?page=station-360&station=${encodeURIComponent(x.station)}">${esc(x.station)}</a></td><td>${esc(x.touchPoint)}</td><td>${esc(x.pillar)}</td><td>${esc(x.requirementRef)}</td><td>${esc(actual?.currentStatus||actual?.availability||'Unverified')}</td><td>${esc(result)}</td><td>${x.answer?.finding||result==='No'?'Performance Finding':'—'}</td></tr>`}).join('')||'<tr><td colspan="7">Belum ada template standard-linked yang Published untuk pilihan ini. Pilih atau buat di Monitoring & Assessment.</td></tr>'}</tbody></table></div><a class="ge-btn" href="app.html?page=monitoring-assessment">Open Monitoring & Assessment</a>`;host.querySelectorAll('select').forEach(el=>el.onchange=()=>{host.dataset[el.dataset.station!==undefined?'station':el.dataset.journey!==undefined?'journey':'point']=el.value;if(el.dataset.journey!==undefined)host.dataset.point='';renderServiceExperience()});host.querySelectorAll('[data-pillar]').forEach(el=>el.onclick=()=>{host.dataset.pillar=host.dataset.pillar===el.dataset.pillar?'':el.dataset.pillar;renderServiceExperience()})}
+function renderCapability(){const page=$('.ge-assessment-four-layer')?.closest('.ge-assessment-foundation-page');if(!page)return;const host=page.querySelector('.ge-card');if(!host)return;const touchpoint=host.dataset.touchpoint||'',source=host.dataset.source||'',stations=arr('airports').map(x=>codeOf(x)).filter(Boolean),chosen=host.querySelector('[data-cap-station]')?.value||stations[0]||'',airport=arr('airports').find(x=>codeOf(x)===chosen)||{},airportClass=String(airport.airportClass||airport.classification||airport.class||'').trim().toLowerCase(),items=publishedItems().filter(x=>(!touchpoint||touchFor(x.touchpointId||x.touchPoint)?.id===touchpoint)&&(!source||String(x.source||'').toLowerCase().includes(source.toLowerCase()))).filter(x=>(!x.applicableStations||String(x.applicableStations).split(/[,;]+/).map(v=>v.trim().toUpperCase()).includes(chosen))&&(!x.airportClass||String(x.airportClass).trim().toLowerCase()===airportClass)),align=arr('serviceAlignments').filter(x=>codeOf(x)===chosen);host.innerHTML=`<h2>Required → Current → Assessed</h2><p>Airport Class memilih requirement yang berlaku. Current hanya berasal dari capability mapping yang diverifikasi.</p><label class="ge-cap-filter">Station <select data-cap-station>${stations.map(x=>`<option ${chosen===x?'selected':''}>${esc(x)}</option>`).join('')}</select></label><label class="ge-cap-filter">Touch Point <select data-cap-point><option value="">All Ground Touch Points</option>${touchMaster().map(v=>`<option value="${esc(v.id)}" ${touchpoint===v.id?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label><label class="ge-cap-filter">Requirement Source <select data-cap-source><option value="">All Sources</option>${['Garuda','Airport Class','SkyTeam','Interline','Agreement'].map(v=>`<option ${source===v?'selected':''}>${v}</option>`).join('')}</select></label><div class="table-wrap"><table><thead><tr><th>Touch Point</th><th>3P</th><th>Source</th><th>Requirement</th><th>Current</th><th>Assessment</th><th>Gap / Finding</th></tr></thead><tbody>${items.length?items.map(x=>{const actual=align.find(v=>String(v.requirementRef||v.requirementCode||'')===x.requirementRef&&String(v.touchPoint||v.touchpoint||'')===x.touchPoint),current=String(actual?.currentStatus||actual?.status||'Unverified'),answer=latestFor(chosen,x)?.result||'Not Assessed',gap=/not available|missing|absent/i.test(current)?'Requirement Gap':latestFor(chosen,x)?.finding||answer==='No'?'Performance Finding':'—';return `<tr><td>${esc(x.touchPoint)}</td><td>${esc(x.pillar)}</td><td>${esc(x.source)}</td><td>${esc(x.requirementRef)}</td><td>${esc(current)}</td><td>${esc(answer)}</td><td>${esc(gap)}</td></tr>`}).join(''):'<tr><td colspan="7">No published requirement applies to this station/class.</td></tr>'}</tbody></table></div>`;page.querySelectorAll('.ge-assessment-four-layer article').forEach((card,index)=>{card.tabIndex=0;card.setAttribute('role','button');card.style.cursor='pointer';const source=['Airport Class','Garuda','SkyTeam','Agreement'][index];card.onclick=()=>{host.dataset.source=host.dataset.source===source?'':source;renderCapability()};card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click()}};card.classList.toggle('active',host.dataset.source===source)});host.querySelector('[data-cap-station]').onchange=renderCapability;host.querySelector('[data-cap-point]').onchange=e=>{host.dataset.touchpoint=e.target.value;renderCapability()};host.querySelector('[data-cap-source]').onchange=e=>{host.dataset.source=e.target.value;renderCapability()}}
+function boot(){addAirportTabs();fixMap();enhanceStation360();renderServiceExperience();renderCapability()}window.geInitAirportExperience=boot;window.addEventListener('gx-data-background-refresh',()=>setTimeout(boot,150));})();
+

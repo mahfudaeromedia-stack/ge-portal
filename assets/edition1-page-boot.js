@@ -36,7 +36,7 @@ async function waitFirebase(){const state=await ensureFirebase();const u=await w
 async function waitStore(){
  if(window.GEStore&&typeof window.GEStore.hydrate==='function')return window.GEStore;
  // If the declared store script did not initialize, retry the same canonical store once.
- await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='assets/edition1-store.js?v=p40&retry=1';s.dataset.e1StoreRetry='1';s.onload=resolve;s.onerror=()=>reject(new Error('Edition1 data store gagal dimuat.'));document.body.appendChild(s)});
+ await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='assets/edition1-store.js?v=r29&retry=1';s.dataset.e1StoreRetry='1';s.onload=resolve;s.onerror=()=>reject(new Error('Edition1 data store gagal dimuat.'));document.body.appendChild(s)});
  const deadline=Date.now()+5000;
  while(Date.now()<deadline){if(window.GEStore&&typeof window.GEStore.hydrate==='function')return window.GEStore;await new Promise(r=>setTimeout(r,25));}
  throw new Error('Edition1 data store gagal diinisialisasi setelah retry canonical store.');
@@ -68,8 +68,6 @@ async function boot(){
   if(!hasAccess()){const target=typeof gxDefaultPage==='function'?gxDefaultPage():'app.html?page=index';if(new URL(target,location.href).href!==location.href)location.replace(target);return}
   showStatus('Mengambil data dari Firebase / Firestore…');
   await store.hydrate(page==='admin'&&session().role!=='Super Admin'?cfg.collections.filter(x=>x!=='auditLogs'):cfg.collections);
-  // Rebuild the canonical master projection only after Firestore hydration so page engines read current data.
-  window.GECore?.syncFromStore?.();
   if(page==='inisiatif'&&(session().role==='Super Admin'||session().role==='Admin'||String(session().accessLevel||'')==='Admin')) await store.hydrate(['users']);
   rerender();
   window.dispatchEvent(new Event('gx-inbox-ready'));
