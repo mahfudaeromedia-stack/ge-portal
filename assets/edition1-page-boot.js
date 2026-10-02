@@ -68,6 +68,8 @@ async function boot(){
   if(!hasAccess()){const target=typeof gxDefaultPage==='function'?gxDefaultPage():'app.html?page=index';if(new URL(target,location.href).href!==location.href)location.replace(target);return}
   showStatus('Mengambil data dari Firebase / Firestore…');
   await store.hydrate(page==='admin'&&session().role!=='Super Admin'?cfg.collections.filter(x=>x!=='auditLogs'):cfg.collections);
+  // Rebuild the canonical master projection only after Firestore hydration so page engines read current data.
+  window.GECore?.syncFromStore?.();
   if(page==='inisiatif'&&(session().role==='Super Admin'||session().role==='Admin'||String(session().accessLevel||'')==='Admin')) await store.hydrate(['users']);
   rerender();
   window.dispatchEvent(new Event('gx-inbox-ready'));
